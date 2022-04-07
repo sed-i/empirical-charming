@@ -4,7 +4,7 @@
 # For a complete list of supported options, see:
 # https://juju.is/docs/sdk/metadata-reference
 
-name: relation-departed
+name: requirer
 description: A blank charm to empirically test juju behavior around relation-departed
 summary: NTA
 
@@ -17,3 +17,7 @@ resources:
     type: oci-image
     description: OCI image just so we have a pebble_ready to better represent most common charms
     upstream-source: busybox
+
+requires:
+  some-regular-relation:
+    interface: some_interface
