@@ -30,10 +30,12 @@ class ProviderCharm(CharmBase):
 
     def _on_relation_departed(self, event):
         if self.unit.is_leader():
+            # https://bugs.launchpad.net/juju/+bug/1968211
             logger.info("Leader attempts to read remote app relation data...")
             value = event.relation.data.get(event.relation.app).get("requirer-key")
             logger.info("Leader read remote app relation data")
 
+            # https://bugs.launchpad.net/juju/+bug/1968212
             logger.info("Leader attempts to write its own relation app data...")
             event.relation.data[self.model.app]["provider-key"] = "value"
             logger.info("Leader wrote its own relation data")
