@@ -11,6 +11,8 @@ from subprocess import call
 if __name__ == "__main__":
     # /var/lib/juju/tools/unit-bare-0/ is already in the PATH, so can call hooks without full path.
     # (os.environ is inherited to the callee.)
-    call(["juju-log", "-l", "INFO", str(os.environ)])
-    call(["juju-log", "-l", "INFO", str(sys.argv)])
+    if hook_name := os.environ.get("JUJU_HOOK_NAME"):
+        call(["juju-log", "-l", "INFO", hook_name])
+    else:
+        call(["juju-log", "-l", "ERROR", "This is odd: JUJU_HOOK_NAME is not set!"])
     call(["status-set", "active", "Woohoo!"])
