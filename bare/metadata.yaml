@@ -8,20 +8,15 @@ name: bare
 description: A blank bare charm to empirically test what makes a charm
 summary: NTA
 
-containers:
-  workload:
-    resource: workload-image
-
-resources:
-  workload-image:
-    type: oci-image
-    description: OCI image just so we have a pebble_ready to better represent most common charms
-    upstream-source: busybox
-
 provides:
-  some-regular-relation:
+  some-regular-provider:
+    interface: some_interface
+
+requires:
+  some-regular-requirer:
     interface: some_interface
 
 peers:
-  bare-replicas:
+  replicas:
     interface: bare_replicas
+

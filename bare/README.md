@@ -3,19 +3,34 @@
 ## Description
 
 This is a bare charm, that does not use ops (operator framework), and does
-nothing.
+nothing but log hook/action names.
 
 ## Usage
 
-TODO: Provide high-level usage, such as required config or relations
+```shell
+charmcraft pack
+
+juju deploy ./bare_ubuntu-20.04-amd64.charm bare1 --num-units 2
+juju deploy ./bare_ubuntu-20.04-amd64.charm bare2 --num-units 2
+
+juju relate bare1:some-regular-provider bare2:some-regular-requirer
+
+juju remove-application bare1 bare2
+```
 
 ## Relations
+The charm's metadata declares two relations so that this charm
+could be related to itself for testing purposes.
 
-TODO: Provide any relations which are provided or required by your charm
+Provides:
+- some-regular-provider
+
+Requires:
+- some-regular-requirer
 
 ## OCI Images
 
-TODO: Include a link to the default image your charm uses
+None.
 
 ## Contributing
 
