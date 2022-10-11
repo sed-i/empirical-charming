@@ -1,0 +1,9 @@
+[workspace]
+
+# Create new with `cargo new --bin p001`
+
+# Run with `cargo run --bin p001`
+
+members = [
+  "hook_printer",
+]

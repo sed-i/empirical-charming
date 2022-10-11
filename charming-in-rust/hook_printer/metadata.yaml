@@ -1,0 +1,41 @@
+# Copyright 2022 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# For a complete list of supported options, see:
+# https://juju.is/docs/sdk/metadata-reference
+
+name: hook-printer
+description: A dummy charm that only prints the hooks it sees
+summary: Written in rust
+
+containers:
+  workload:
+    # For generating workload and storage events
+    resource: workload-image
+    mounts:
+      - storage: dummy
+        location: /opt/dummy
+
+storage:
+  dummy:
+    type: filesystem
+
+resources:
+  workload-image:
+    type: oci-image
+    description: OCI image just so we have a pebble_ready to better represent most common charms
+    upstream-source: busybox
+
+provides:
+  # For generating (regular) relation events
+  some-regular-provider:
+    interface: some_interface
+
+requires:
+  some-regular-requirer:
+    interface: some_interface
+
+peers:
+  # For generating peer relation events
+  replicas:
+    interface: replicas
