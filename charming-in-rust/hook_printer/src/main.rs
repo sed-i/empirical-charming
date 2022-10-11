@@ -1,6 +1,24 @@
 use std::env;
+use strum_macros::Display;
+
+
+#[derive(Display, Debug)]
+enum HookContext {
+    // #[strum(to_string = "context")]
+    Context(String),
+
+    // #[strum(to_string = "invalid_context")]
+    InvalidContext,
+}
+
+fn parse_hook_context() -> HookContext {
+    if let Ok(hook_name) = env::var("JUJU_HOOK_NAME") {
+        HookContext::Context(hook_name)
+    } else {
+        HookContext::InvalidContext
+    }
+}
 
 fn main() {
-    let hook_name = env::var("JUJU_HOOK_NAME").unwrap_or("Unknown".to_string());
-    println!("Hello Juju: {}", hook_name);
+    println!("Hello Juju: {}", parse_hook_context());
 }
