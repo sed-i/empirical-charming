@@ -6,16 +6,26 @@ use strum_macros::Display;
 struct GenericContext {
     model: String,
     model_uuid: String,
-    unit: String,
+    app_name: String,
+    unit: u32,
     juju_version: String,
 }
 
 impl GenericContext {
     pub fn from_env() -> Result<Self, std::env::VarError> {
+
+        // Unit name looks like this: "unit/0".
+        // First part is app name, second part is unit number.
+        let unit = env::var("JUJU_UNIT_NAME")?;
+        let mut split = unit.split("/");
+        let app_name = split.next().unwrap().to_string();
+        let unit_num = split.next().unwrap().parse::<u32>().unwrap();
+
         Ok(Self {
             model: env::var("JUJU_MODEL_NAME")?,
             model_uuid: env::var("JUJU_MODEL_UUID")?,
-            unit: env::var("JUJU_UNIT_NAME")?,
+            app_name,
+            unit: unit_num,
             juju_version: env::var("JUJU_VERSION")?,
         })
     }
