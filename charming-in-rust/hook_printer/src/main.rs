@@ -4,16 +4,26 @@ mod jujuenv;
 
 use jujuenv::parse_hook_context;
 
+#[derive(Default)]
+struct Charm {}
 
-fn on_install() {
-    println!("Custom on_install hook");
+impl Charm {
+    fn on_install(&self) {
+        println!("Custom on_install hook");
+    }
+
+    fn dispatch(&self) {
+        let ctx = parse_hook_context();
+        println!("Hello Juju: {:?}", ctx);
+
+        match ctx {
+            jujuenv::HookContext::Install(_, _) => self.on_install(),
+            _ => {},
+        }
+    }
 }
 
 fn main() {
-    let ctx = parse_hook_context();
-    match ctx {
-        jujuenv::HookContext::Install(_, _) => on_install(),
-        _ => {},
-    }
-    println!("Hello Juju: {:?}", ctx);
+    let charm = Charm::default();
+    charm.dispatch();
 }
