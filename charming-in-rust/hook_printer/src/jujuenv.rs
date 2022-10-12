@@ -157,7 +157,8 @@ impl ContextFromEnvs for PebbleReadyContext {
 #[derive(Debug)]
 pub struct RelationCreatedContext {
     relation_name: String,
-    relation_id: u32,
+    // relation_id: u32,
+    relation_id: String,
     remote_app: String,
 }
 
@@ -165,7 +166,8 @@ impl ContextFromEnvs for RelationCreatedContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        // let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        let relation_id = env::var("JUJU_RELATION_ID")?;
         let remote_app = env::var("JUJU_REMOTE_APP")?;
 
         if hook_name == format!("{}-relation-created", relation_name) {
