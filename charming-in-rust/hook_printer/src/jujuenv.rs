@@ -2,6 +2,22 @@ use std::env;
 use strum_macros::Display;
 
 
+fn split_relation_id(relation_id: String) -> (String, u32) {
+    let mut split = relation_id.split(":");
+    let relation_name = split.next().unwrap().to_string();
+    let relation_id = split.next().unwrap().parse::<u32>().unwrap();
+    (relation_name, relation_id)
+}
+
+
+fn split_unit_num(unit: String) -> (String, u32) {
+    let mut split = unit.split("/");
+    let app_name = split.next().unwrap().to_string();
+    let unit_num = split.next().unwrap().parse::<u32>().unwrap();
+    (app_name, unit_num)
+}
+
+
 trait ContextFromEnvs {
     fn from_env() -> Result<Self, std::env::VarError> where Self: Sized;
 }
@@ -22,9 +38,7 @@ impl ContextFromEnvs for GenericContext {
         // Unit name looks like this: "unit/0".
         // First part is app name, second part is unit number.
         let unit = env::var("JUJU_UNIT_NAME")?;
-        let mut split = unit.split("/");
-        let app_name = split.next().unwrap().to_string();
-        let unit_num = split.next().unwrap().parse::<u32>().unwrap();
+        let (app_name, unit_num) = split_unit_num(unit);
 
         Ok(Self {
             model: env::var("JUJU_MODEL_NAME")?,
@@ -157,8 +171,7 @@ impl ContextFromEnvs for PebbleReadyContext {
 #[derive(Debug)]
 pub struct RelationCreatedContext {
     relation_name: String,
-    // relation_id: u32,
-    relation_id: String,
+    relation_id: u32,
     remote_app: String,
 }
 
@@ -166,9 +179,8 @@ impl ContextFromEnvs for RelationCreatedContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        // let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
-        let relation_id = env::var("JUJU_RELATION_ID")?;
         let remote_app = env::var("JUJU_REMOTE_APP")?;
+        let (_, relation_id) = split_relation_id(env::var("JUJU_RELATION_ID")?);
 
         if hook_name == format!("{}-relation-created", relation_name) {
             Ok(Self{relation_name, relation_id, remote_app})
