@@ -2,6 +2,10 @@ use std::env;
 use strum_macros::Display;
 
 
+trait ContextFromEnvs {
+    fn from_env() -> Result<Self, std::env::VarError> where Self: Sized;
+}
+
 #[derive(Debug)]
 pub struct GenericContext {
     model: String,
@@ -11,8 +15,8 @@ pub struct GenericContext {
     juju_version: String,
 }
 
-impl GenericContext {
-    pub fn from_env() -> Result<Self, std::env::VarError> {
+impl ContextFromEnvs for GenericContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
 
         // Unit name looks like this: "unit/0".
         // First part is app name, second part is unit number.
@@ -35,8 +39,8 @@ impl GenericContext {
 #[derive(Debug)]
 pub struct InstallContext {}
 
-impl InstallContext {
-    pub fn from_env() -> Result<Self, std::env::VarError> {
+impl ContextFromEnvs for InstallContext  {
+    fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
 
         if hook_name == "install".to_string() {
@@ -51,8 +55,8 @@ impl InstallContext {
 #[derive(Debug)]
 pub struct StopContext {}
 
-impl StopContext {
-    pub fn from_env() -> Result<Self, std::env::VarError> {
+impl ContextFromEnvs for StopContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
 
         if hook_name == "stop".to_string() {
@@ -67,8 +71,8 @@ impl StopContext {
 #[derive(Debug)]
 pub struct RemoveContext {}
 
-impl RemoveContext {
-    pub fn from_env() -> Result<Self, std::env::VarError> {
+impl ContextFromEnvs for RemoveContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
 
         if hook_name == "remove".to_string() {
@@ -85,8 +89,8 @@ pub struct PebbleReadyContext {
     workload: String,
 }
 
-impl PebbleReadyContext {
-    pub fn from_env() -> Result<Self, std::env::VarError> {
+impl ContextFromEnvs for PebbleReadyContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let workload_name = env::var("JUJU_WORKLOAD_NAME")?;
 
@@ -109,13 +113,15 @@ pub enum HookContext {
 }
 
 pub fn parse_hook_context() -> HookContext {
-
     if let Ok(generic_ctx) = GenericContext::from_env() {
         if let Ok(ctx) = InstallContext::from_env() {
             HookContext::Install(ctx, generic_ctx)
-        }
-        else if let Ok(ctx) = PebbleReadyContext::from_env() {
+        } else if let Ok(ctx) = PebbleReadyContext::from_env() {
             HookContext::PebbleReady(ctx, generic_ctx)
+        } else if let Ok(ctx) = StopContext::from_env() {
+            HookContext::Stop(ctx, generic_ctx)
+        } else if let Ok(ctx) = RemoveContext::from_env() {
+            HookContext::Remove(ctx, generic_ctx)
         } else {
             HookContext::InvalidContext("Juju context present but hook context absent".to_string())
         }
