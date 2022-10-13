@@ -2,19 +2,24 @@ use std::env;
 use strum_macros::Display;
 
 
-fn split_relation_id(relation_id: String) -> (String, u32) {
-    let mut split = relation_id.split(":");
-    let relation_name = split.next().unwrap().to_string();
-    let relation_id = split.next().unwrap().parse::<u32>().unwrap();
-    (relation_name, relation_id)
+/// Split typical juju 2-tuple id strings into 2 parts.
+fn split_id_str(expression: String, separator: &str) -> (String, u32) {
+    let mut split = expression.split(separator);
+    let first = split.next().unwrap().to_string();
+    let second = split.next().unwrap().parse::<u32>().unwrap();
+    (first, second)
 }
 
+#[cfg(test)]
+mod test_split_id_str {
+    use super::*;
 
-fn split_unit_num(unit: String) -> (String, u32) {
-    let mut split = unit.split("/");
-    let app_name = split.next().unwrap().to_string();
-    let unit_num = split.next().unwrap().parse::<u32>().unwrap();
-    (app_name, unit_num)
+    #[test]
+    fn test_split_id_str() {
+        assert_eq!(split_id_str("relation:7".to_string(), ":"), ("relation".to_string(), 7));
+        assert_eq!(split_id_str("unit/0".to_string(), "/"), ("unit".to_string(), 0));
+        assert_eq!(split_id_str("storage/37".to_string(), "/"), ("storage".to_string(), 37));
+    }
 }
 
 
@@ -38,7 +43,7 @@ impl ContextFromEnvs for GenericContext {
         // Unit name looks like this: "unit/0".
         // First part is app name, second part is unit number.
         let unit = env::var("JUJU_UNIT_NAME")?;
-        let (app_name, unit_num) = split_unit_num(unit);
+        let (app_name, unit_num) = split_id_str(unit, "/");
 
         Ok(Self {
             model: env::var("JUJU_MODEL_NAME")?,
@@ -180,7 +185,7 @@ impl ContextFromEnvs for RelationCreatedContext {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
         let remote_app = env::var("JUJU_REMOTE_APP")?;
-        let (_, relation_id) = split_relation_id(env::var("JUJU_RELATION_ID")?);
+        let (_, relation_id) = split_id_str(env::var("JUJU_RELATION_ID")?, ":");
 
         if hook_name == format!("{}-relation-created", relation_name) {
             Ok(Self{relation_name, relation_id, remote_app})
@@ -202,7 +207,7 @@ impl ContextFromEnvs for RelationBrokenContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        let (_, relation_id) = split_id_str(env::var("JUJU_RELATION_ID")?, ":");
         let remote_app = env::var("JUJU_REMOTE_APP")?;
 
         if hook_name == format!("{}-relation-broken", relation_name) {
@@ -226,7 +231,7 @@ impl ContextFromEnvs for RelationJoinedContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        let (_, relation_id) = split_id_str(env::var("JUJU_RELATION_ID")?, ":");
         let remote_app = env::var("JUJU_REMOTE_APP")?;
         let remote_unit = env::var("JUJU_REMOTE_UNIT")?;
 
@@ -252,7 +257,7 @@ impl ContextFromEnvs for RelationDepartedContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        let (_, relation_id) = split_id_str(env::var("JUJU_RELATION_ID")?, ":");
         let remote_app = env::var("JUJU_REMOTE_APP")?;
         let remote_unit = env::var("JUJU_REMOTE_UNIT")?;
         let departing_unit = env::var("JUJU_DEPARTING_UNIT")?;
@@ -278,12 +283,60 @@ impl ContextFromEnvs for RelationChangedContext {
     fn from_env() -> Result<Self, std::env::VarError> {
         let hook_name = env::var("JUJU_HOOK_NAME")?;
         let relation_name = env::var("JUJU_RELATION")?;
-        let relation_id = env::var("JUJU_RELATION_ID")?.parse::<u32>().unwrap();
+        let (_, relation_id) = split_id_str(env::var("JUJU_RELATION_ID")?, ":");
         let remote_app = env::var("JUJU_REMOTE_APP")?;
         let remote_unit = env::var("JUJU_REMOTE_UNIT")?;
 
         if hook_name == format!("{}-relation-changed", relation_name) {
             Ok(Self{relation_name, relation_id, remote_app, remote_unit})
+        } else {
+            Err(std::env::VarError::NotPresent)
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub struct StorageAttachedContext {
+    name: String,
+    location: String,
+    id: u32,
+    kind: String,
+}
+
+impl ContextFromEnvs for StorageAttachedContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
+        let hook_name = env::var("JUJU_HOOK_NAME")?;
+        let location = env::var("JUJU_STORAGE_LOCATION")?;
+        let (name, id) = split_id_str(env::var("JUJU_STORAGE_ID")?, "/");
+        let kind = env::var("JUJU_STORAGE_KIND")?;
+
+        if hook_name == format!("{}-storage-attached", name) {
+            Ok(Self{name, location, id, kind})
+        } else {
+            Err(std::env::VarError::NotPresent)
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub struct StorageDetachingContext {
+    name: String,
+    location: String,
+    id: u32,
+    kind: String,
+}
+
+impl ContextFromEnvs for StorageDetachingContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
+        let hook_name = env::var("JUJU_HOOK_NAME")?;
+        let location = env::var("JUJU_STORAGE_LOCATION")?;
+        let (name, id) = split_id_str(env::var("JUJU_STORAGE_ID")?, "/");
+        let kind = env::var("JUJU_STORAGE_KIND")?;
+
+        if hook_name == format!("{}-storage-detaching", name) {
+            Ok(Self{name, location, id, kind})
         } else {
             Err(std::env::VarError::NotPresent)
         }
@@ -320,6 +373,9 @@ pub enum HookContext {
     RelationDeparted(RelationDepartedContext, GenericContext),
     RelationChanged(RelationChangedContext, GenericContext),
 
+    StorageAttached(StorageAttachedContext, GenericContext),
+    StorageDetaching(StorageDetachingContext, GenericContext),
+
     InvalidContext(String, EntireEnvContext),
 }
 
@@ -353,6 +409,10 @@ pub fn parse_hook_context() -> HookContext {
             HookContext::RelationDeparted(ctx, generic_ctx)
         } else if let Ok(ctx) = RelationChangedContext::from_env() {
             HookContext::RelationChanged(ctx, generic_ctx)
+        } else if let Ok(ctx) = StorageAttachedContext::from_env() {
+            HookContext::StorageAttached(ctx, generic_ctx)
+        } else if let Ok(ctx) = StorageDetachingContext::from_env() {
+            HookContext::StorageDetaching(ctx, generic_ctx)
         } else {
             HookContext::InvalidContext("Juju context present but hook context absent; error obtaining envs".to_string(), entire_ctx)
         }
