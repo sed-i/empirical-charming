@@ -25,11 +25,11 @@ trait ContextFromEnvs {
 
 #[derive(Debug)]
 pub struct GenericContext {
-    model: String,
-    model_uuid: String,
-    app_name: String,
-    unit: u32,
-    juju_version: String,
+    pub model: String,
+    pub model_uuid: String,
+    pub app_name: String,
+    pub unit: u32,
+    pub juju_version: String,
 }
 
 impl ContextFromEnvs for GenericContext {
@@ -151,7 +151,7 @@ impl ContextFromEnvs for RemoveContext {
 
 #[derive(Debug)]
 pub struct PebbleReadyContext {
-    workload: String,
+    pub workload: String,
 }
 
 impl ContextFromEnvs for PebbleReadyContext {
@@ -170,9 +170,9 @@ impl ContextFromEnvs for PebbleReadyContext {
 
 #[derive(Debug)]
 pub struct RelationCreatedContext {
-    relation_name: String,
-    relation_id: u32,
-    remote_app: String,
+    pub relation_name: String,
+    pub relation_id: u32,
+    pub remote_app: String,
 }
 
 impl ContextFromEnvs for RelationCreatedContext {
@@ -193,9 +193,9 @@ impl ContextFromEnvs for RelationCreatedContext {
 
 #[derive(Debug)]
 pub struct RelationBrokenContext {
-    relation_name: String,
-    relation_id: u32,
-    remote_app: String,
+    pub relation_name: String,
+    pub relation_id: u32,
+    pub remote_app: String,
 }
 
 impl ContextFromEnvs for RelationBrokenContext {
@@ -216,10 +216,10 @@ impl ContextFromEnvs for RelationBrokenContext {
 
 #[derive(Debug)]
 pub struct RelationJoinedContext {
-    relation_name: String,
-    relation_id: u32,
-    remote_app: String,
-    remote_unit: String,
+    pub relation_name: String,
+    pub relation_id: u32,
+    pub remote_app: String,
+    pub remote_unit: String,
 }
 
 impl ContextFromEnvs for RelationJoinedContext {
@@ -241,11 +241,11 @@ impl ContextFromEnvs for RelationJoinedContext {
 
 #[derive(Debug)]
 pub struct RelationDepartedContext {
-    relation_name: String,
-    relation_id: u32,
-    remote_app: String,
-    remote_unit: String,
-    departing_unit: String,
+    pub relation_name: String,
+    pub relation_id: u32,
+    pub remote_app: String,
+    pub remote_unit: String,
+    pub departing_unit: String,
 }
 
 impl ContextFromEnvs for RelationDepartedContext {
@@ -291,6 +291,18 @@ impl ContextFromEnvs for RelationChangedContext {
 }
 
 
+#[derive(Debug)]
+pub struct EntireEnvContext {
+    vars: Vec<(String, String)>,
+}
+
+impl ContextFromEnvs for EntireEnvContext {
+    fn from_env() -> Result<Self, std::env::VarError> {
+        Ok(Self { vars: env::vars().collect() })
+    }
+}
+
+
 #[derive(Display, Debug)]
 pub enum HookContext {
     Install(InstallContext, GenericContext),
@@ -308,10 +320,12 @@ pub enum HookContext {
     RelationDeparted(RelationDepartedContext, GenericContext),
     RelationChanged(RelationChangedContext, GenericContext),
 
-    InvalidContext(String),
+    InvalidContext(String, EntireEnvContext),
 }
 
 pub fn parse_hook_context() -> HookContext {
+    let entire_ctx = EntireEnvContext::from_env().unwrap();
+
     if let Ok(generic_ctx) = GenericContext::from_env() {
         if let Ok(ctx) = InstallContext::from_env() {
             HookContext::Install(ctx, generic_ctx)
@@ -340,9 +354,9 @@ pub fn parse_hook_context() -> HookContext {
         } else if let Ok(ctx) = RelationChangedContext::from_env() {
             HookContext::RelationChanged(ctx, generic_ctx)
         } else {
-            HookContext::InvalidContext("Juju context present but hook context absent".to_string())
+            HookContext::InvalidContext("Juju context present but hook context absent; error obtaining envs".to_string(), entire_ctx)
         }
     } else {
-        HookContext::InvalidContext("Invalid juju context (not even bothering with hook context)".to_string())
+        HookContext::InvalidContext("Invalid juju context (not even bothering with hook context)".to_string(), entire_ctx)
     }
 }
