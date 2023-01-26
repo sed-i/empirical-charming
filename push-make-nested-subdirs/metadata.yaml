@@ -1,0 +1,26 @@
+# Copyright 2021 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# For a complete list of supported options, see:
+# https://juju.is/docs/sdk/metadata-reference
+
+name: pusher
+description: Test pushing file into nested not-yet existing dirs
+summary: NTA
+
+containers:
+  workload:
+    resource: image
+    mounts:
+      - storage: data
+        location: /mounted-storage
+
+storage:
+  data:
+    type: filesystem
+    description: Mount point in which we will test pushing
+
+resources:
+  image:
+    type: oci-image
+    upstream-source: busybox
